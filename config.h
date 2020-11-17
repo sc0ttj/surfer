@@ -31,15 +31,15 @@
 /*
 WEBKIT_HARDWARE_ACCELERATION_POLICY_ON_DEMAND
 Hardware acceleration is enabled/disabled as request by web contents.
- 
+
 WEBKIT_HARDWARE_ACCELERATION_POLICY_ALWAYS
 Hardware acceleration is always enabled, even for websites not requesting it.
- 
+
 WEBKIT_HARDWARE_ACCELERATION_POLICY_NEVER
 Hardware acceleration is always disabled, even for websites requesting it.
 */
 
-#define SURFER_SPATIAL_NAVIGATION 	FALSE//TRUE to enable 
+#define SURFER_SPATIAL_NAVIGATION 	FALSE//TRUE to enable
 #define SURFER_WINDOW_WIDTH	1100
 #define SURFER_WINDOW_HEIGHT	680
 
@@ -64,7 +64,7 @@ Hardware acceleration is always disabled, even for websites requesting it.
 #define SURFER_BIN	"/usr/bin"                                      // upper directory(s) must exist
 
 #define SURFER_PLAYER	"/usr/bin/mpv"                                          // best with youtube-dl on supported sites
-#define SURFER_SEARCH_SITE  "https://translate.google.com/#auto/en/"
+#define SURFER_SEARCH_SITE  "https://duckduckgo.com"
 
 //"https://www.google.com/search?q="
 

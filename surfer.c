@@ -40,10 +40,12 @@ typedef struct Client{
 
     GtkWidget *button_goback;
     GtkWidget *button_goforward;
+    GtkWidget *button_home;
     GtkWidget *button_dm;
     GtkWidget *button_js;
     GtkWidget *button_bookmark;
     GtkWidget *button_history;
+    GtkWidget *button_find_next;
     GtkWidget *button_find_back;
     GtkWidget *button_find_close;
 
@@ -111,7 +113,7 @@ static gboolean istmpdownload =FALSE;
 
 static gboolean priv=FALSE;
 
-static gboolean enablehist=FALSE;
+static gboolean enablehist=TRUE;
 
 static void destroy_window(GtkWidget* w,Client *rc);
 //static void tls_certs(WebKitWebContext *wc);
@@ -139,6 +141,7 @@ static void decide_response(WebKitPolicyDecision *decision,Client *c);
 
 static gboolean download_button_press( Client *c);
 static gboolean download_handle(WebKitDownload *, gchar *, gpointer);
+
 static void download_handle_start(WebKitWebView *, WebKitDownload *, gpointer);
 static void download_cancel( GtkWidget *,WebKitDownload *download);
 static void download_handle_finished(WebKitDownload *download, gpointer data);
@@ -165,8 +168,9 @@ static gboolean keyboard(GtkWidget *widget, GdkEvent *event, Client *c,  gpointe
 static void openlink(GtkWidget *widget,Client *c);
 
 static void find(GtkWidget *widget,Client *c);
-static void find_close( Client *c);
+static void find_next(GtkWidget * widget,Client *c);
 static void find_back(GtkWidget * widget,Client *c);
+static void find_close( Client *c);
 
 static void togglejs_cb(GtkWidget * widget,Client *c);
 static void toggleab_cb(GtkWidget * widget,Client *c);
@@ -178,6 +182,7 @@ static void toggleuserstyle_cb(Client *c);
 static void goback(WebKitWebView *rv,Client *c);
 static void goforward(WebKitWebView *rv,Client *c);
 static void bookmark_cb(WebKitWebView *webview,Client *c);
+static void home_button_press(WebKitWebView *rv,Client *c);
 
 static gboolean setup();
 static GHashTable *create_hash_table_from_file (gchar *tablepath);
@@ -269,43 +274,45 @@ Client *client_new(Client *rc) {
     c->fc= webkit_web_view_get_find_controller(c->webView);
 
 
-
     c->vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 
     c->box_find = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     c->box_open = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 
-    c->button_goback = gtk_button_new_with_label("<");
-    c->button_goforward = gtk_button_new_with_label(">");
-    c->button_dm = gtk_button_new_with_label("[...]");
+    c->button_goback = gtk_button_new_with_label("  ");
+    c->button_goforward = gtk_button_new_with_label("  ");
+    c->button_home = gtk_button_new_with_label("  ");
+    c->button_dm = gtk_button_new_with_label(" ﰭ ");
+    c->button_bookmark = gtk_button_new_with_label("  ");
+    c->button_js = gtk_button_new_with_label("  ");
+    c->button_history = gtk_button_new_with_label("  ");
 
-
-    c->button_bookmark = gtk_button_new_with_label("B");
-    c->button_js = gtk_button_new_with_label("JS");
-    c->button_history = gtk_button_new_with_label("H");
-
+    gtk_widget_set_tooltip_text(c->button_home,"Homepage");
     gtk_widget_set_tooltip_text(c->button_dm,"Downloads");
-    gtk_widget_set_tooltip_text(c->button_js,"JS toogle");
+    gtk_widget_set_tooltip_text(c->button_js,"JS toggle");
     gtk_widget_set_tooltip_text(c->button_bookmark,"Bookmark site");
     gtk_widget_set_tooltip_text(c->button_history,"History toogle");
 
     gtk_widget_show_all (menuitem1);
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), menuitem1);
 
-    c->button_find_close = gtk_button_new_with_label ("Close");
-    c->button_find_back = gtk_button_new_with_label ("Find Back");
+    c->button_find_next = gtk_button_new_with_mnemonic ("  _Next ");
+    c->button_find_back = gtk_button_new_with_mnemonic ("  _Previous ");
+    c->button_find_close = gtk_button_new_with_label ("  ");
     c->entry_find = gtk_entry_new();
-    c->entry_open= gtk_entry_new();
+    c->entry_open = gtk_entry_new();
 
-
+    gtk_box_pack_start(GTK_BOX(c->box_find), gtk_label_new ("  "), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(c->box_find), c->entry_find, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(c->box_find), c->button_find_back, TRUE, TRUE, 0);
-    gtk_box_pack_end(GTK_BOX(c->box_find), c->button_find_close,TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(c->box_find), c->button_find_next, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(c->box_find), c->button_find_back, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(c->box_find), c->button_find_close,FALSE, FALSE, 0);
 
     gtk_box_pack_start(GTK_BOX(c->box_open), c->button_goback,FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(c->box_open), c->button_goforward,FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(c->box_open), c->button_dm,FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(c->box_open), c->button_home,FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(c->box_open),c->entry_open, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(c->box_open), c->button_dm,FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(c->box_open),c->button_bookmark, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(c->box_open),c->button_history, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(c->box_open),c->button_js, FALSE, FALSE, 0);
@@ -315,7 +322,7 @@ Client *client_new(Client *rc) {
     gtk_box_pack_start(GTK_BOX(c->vbox),GTK_WIDGET(c->webView), TRUE, TRUE, 0);
     gtk_box_pack_start (GTK_BOX(c->vbox),c->box_find, FALSE, FALSE, 0);
 
-    //gtk_container_add(GTK_CONTAINER(c->button_dm), GTK_WIDGET(menu));
+//    gtk_container_add(GTK_CONTAINER(c->button_dm), GTK_WIDGET(menu));
 
     gtk_container_add(GTK_CONTAINER(c->main_window), GTK_WIDGET(c->vbox));
 
@@ -327,11 +334,13 @@ Client *client_new(Client *rc) {
 
     g_signal_connect(G_OBJECT(c->button_goback), "clicked", G_CALLBACK(goback), c);
     g_signal_connect(G_OBJECT(c->button_goforward), "clicked", G_CALLBACK(goforward), c);
+    g_signal_connect(G_OBJECT(c->button_home), "clicked", G_CALLBACK(home_button_press), c);
     g_signal_connect(G_OBJECT(c->button_dm), "clicked", G_CALLBACK(download_button_press), c);
     g_signal_connect(G_OBJECT(c->button_bookmark), "clicked", G_CALLBACK(bookmark_cb), c);
     g_signal_connect(G_OBJECT(c->button_history), "clicked", G_CALLBACK(togglehistory_cb), c);
     g_signal_connect(G_OBJECT(c->button_js), "clicked", G_CALLBACK(togglejs_cb), c);
     g_signal_connect(G_OBJECT(c->entry_find), "activate", G_CALLBACK(find), c);
+    g_signal_connect(G_OBJECT(c->button_find_next), "clicked", G_CALLBACK(find_next), c);
     g_signal_connect(G_OBJECT(c->button_find_back), "clicked", G_CALLBACK(find_back), c);
     g_signal_connect_swapped (G_OBJECT (c->button_find_close), "clicked",G_CALLBACK (find_close),c);
 
@@ -354,7 +363,7 @@ Client *client_new(Client *rc) {
 
 
  c->enablejs =TRUE;
- 
+
     clients++;
  return c;
 }
@@ -401,23 +410,15 @@ else {
   else
    mgr = webkit_website_data_manager_new("base-data-directory" , datadir,"base-cache-directory", cachedir,NULL);
 
+   wc = webkit_web_context_new_with_website_data_manager(mgr);
+   settings = webkit_settings_new();
+   contentmanager = webkit_user_content_manager_new();
 
+   //view= WEBKIT_WEB_VIEW(webkit_web_view_new_with_context(wc));
+   //char *value = "Mozilla/5.0";
+   //g_object_set(settings, "user-agent", &value, NULL);
 
-
-wc = webkit_web_context_new_with_website_data_manager(mgr);
-
-settings = webkit_settings_new();
-
-contentmanager = webkit_user_content_manager_new();
-
-
-
- //view= WEBKIT_WEB_VIEW(webkit_web_view_new_with_context(wc));
- //char *value = "Mozilla/5.0";
- //g_object_set(settings, "user-agent", &value, NULL);
-
-    if (!wc_setup_done)
-    {
+    if (!wc_setup_done) {
 
     g_signal_connect(G_OBJECT(wc), "download-started", G_CALLBACK(download_handle_start), NULL);
     wc_setup_done = TRUE;
@@ -452,56 +453,43 @@ contentmanager = webkit_user_content_manager_new();
     webkit_web_context_add_path_to_sandbox(wc, WEB_EXTENSIONS_DIRECTORY, TRUE);
     webkit_web_context_add_path_to_sandbox(wc, js_dir, TRUE);
 
-
-
     if (!g_file_test(cookie_file, G_FILE_TEST_EXISTS)) {
         File = fopen(cookie_file, "wb+");
-
         fclose(File);
     }
 
+    // cookiemgr = webkit_website_data_manager_get_cookie_manager(mgr);
 
+    cookiemgr = webkit_web_context_get_cookie_manager(wc);
+    webkit_cookie_manager_set_persistent_storage(cookiemgr, cookie_file,WEBKIT_COOKIE_PERSISTENT_STORAGE_SQLITE);
+    webkit_cookie_manager_set_accept_policy(cookiemgr,SURFER_COOKIE_POLICY);
 
+     webkit_web_context_set_tls_errors_policy(wc, WEBKIT_TLS_ERRORS_POLICY_IGNORE);
 
- // cookiemgr = webkit_website_data_manager_get_cookie_manager(mgr);
+    view=g_object_new(WEBKIT_TYPE_WEB_VIEW,"settings",settings,"user-content-manager",contentmanager,"web-context",wc,NULL);
 
-  cookiemgr = webkit_web_context_get_cookie_manager(wc);
+    //printf("new\n");
+  }
 
-   webkit_cookie_manager_set_persistent_storage(cookiemgr, cookie_file,WEBKIT_COOKIE_PERSISTENT_STORAGE_SQLITE);
-   webkit_cookie_manager_set_accept_policy(cookiemgr,SURFER_COOKIE_POLICY);
-
-
-   webkit_web_context_set_tls_errors_policy(wc, WEBKIT_TLS_ERRORS_POLICY_IGNORE);
-
-
-view=g_object_new(WEBKIT_TYPE_WEB_VIEW,"settings",settings,"user-content-manager",contentmanager,"web-context",wc,NULL);
-
- //printf("new\n");
-}
-
-g_object_connect(
-        G_OBJECT(view),"signal::load-changed", G_CALLBACK(changed_webload),c,
-                       "signal::notify::title", G_CALLBACK(changed_title),c ,
-//                       "signal::notify::url", G_CALLBACK(changed_url), c,
-                       "signal::notify::estimated-load-progress",G_CALLBACK(changed_estimated),c,
-                       "signal::decide-policy", G_CALLBACK(decide_policy),c,
-                       "signal::close", G_CALLBACK(close_request), c,
-                       "signal::ready-to-show",G_CALLBACK(display_webview), c,
-                       "signal::create",G_CALLBACK(create_request), c,
-                       "signal::context-menu",G_CALLBACK(menucreate_cb), c,
-                       "signal::mouse-target-changed",G_CALLBACK(mousetargetchanged), c,
-                       "signal::show-notification", G_CALLBACK (shownotification), c,
-//                       "signal::web-process-crashed",G_CALLBACK(crashed), c,
-                       "signal::permission-request",G_CALLBACK(permission_request_cb), c,
-//                       "signal::load-failed-with-tls-errors", G_CALLBACK(allow_tls_cert), c,
+  g_object_connect(
+    G_OBJECT(view),
+    "signal::load-changed", G_CALLBACK(changed_webload),c,
+    "signal::notify::title", G_CALLBACK(changed_title),c ,
+    //"signal::notify::url", G_CALLBACK(changed_url), c,
+    "signal::notify::estimated-load-progress",G_CALLBACK(changed_estimated),c,
+    "signal::decide-policy", G_CALLBACK(decide_policy),c,
+    "signal::close", G_CALLBACK(close_request), c,
+    "signal::ready-to-show",G_CALLBACK(display_webview), c,
+    "signal::create",G_CALLBACK(create_request), c,
+    "signal::context-menu",G_CALLBACK(menucreate_cb), c,
+    "signal::mouse-target-changed",G_CALLBACK(mousetargetchanged), c,
+    "signal::show-notification", G_CALLBACK (shownotification), c,
+    //"signal::web-process-crashed",G_CALLBACK(crashed), c,
+    "signal::permission-request",G_CALLBACK(permission_request_cb), c,
+    //"signal::load-failed-with-tls-errors", G_CALLBACK(allow_tls_cert), c,
     NULL
-    );
-
-
-
-
-
-return view;
+  );
+  return view;
 }
 
 
@@ -541,7 +529,7 @@ loadurl(Client *c,  gchar *url)
 gboolean
 shownotification (WebKitWebView *web_view,WebKitNotification *notification,Client *c)
 {
-  
+
 
    const char *notifytitle = webkit_notification_get_title (notification);
    const char *notify = webkit_notification_get_body (notification);
@@ -558,7 +546,7 @@ shownotification (WebKitWebView *web_view,WebKitNotification *notification,Clien
    }
    notify_uninit();
    g_object_unref(G_OBJECT(not));
- 
+
    return TRUE;
 }
 
@@ -635,6 +623,17 @@ gboolean permission_request_cb (WebKitWebView *web_view,WebKitPermissionRequest 
     gtk_widget_destroy (dialog);
 
     return TRUE;
+}
+
+
+
+void
+home_button_press(WebKitWebView *rv,Client *c){
+
+  gtk_window_set_title(GTK_WINDOW(c->main_window), "HOME");
+  recordhistory=FALSE;
+  loadurl(c, g_strdup_printf("%s", SURFER_SEARCH_SITE));
+
 }
 
 
@@ -749,7 +748,7 @@ download_handle(WebKitDownload *download, gchar *suggested_filename, gpointer da
    g_free(downloadsfilename);
 
 
-   } 
+   }
 
 
 
@@ -1118,7 +1117,7 @@ void
 changed_url(WebKitWebView *rv,Client *c) {
 
 
-//   update_title(c); 
+//   update_title(c);
 
 }
 
@@ -1300,7 +1299,7 @@ void decide_newwindow(WebKitPolicyDecision *decision,Client *c)
              t = (gchar *) webkit_uri_request_get_uri(request);
              rc = client_new(c);
              loadurl(rc,t);
-        case WEBKIT_NAVIGATION_TYPE_FORM_SUBMITTED: 
+        case WEBKIT_NAVIGATION_TYPE_FORM_SUBMITTED:
         case WEBKIT_NAVIGATION_TYPE_BACK_FORWARD:
         case WEBKIT_NAVIGATION_TYPE_RELOAD:
         case WEBKIT_NAVIGATION_TYPE_FORM_RESUBMITTED:
@@ -1398,14 +1397,14 @@ keyboard(GtkWidget *widget,GdkEvent *event, Client *c,  gpointer data) {
                    toggleopen_cb(c->box_open,c);
                    return TRUE;
 
-		case SURFER_HISTORY_KEY:
-		    recordhistory=FALSE;
+            		case SURFER_HISTORY_KEY:
+            		    recordhistory=FALSE;
                     loadurl(c,history);
                     return TRUE;
 
                 case SURFER_NEW_WINDOW_KEY:
                     recordhistory=FALSE;
-		    isrelated = FALSE;
+		                isrelated = FALSE;
                     rc = client_new(c);
                     loadurl(rc,home);
                     return TRUE;
@@ -1437,8 +1436,8 @@ keyboard(GtkWidget *widget,GdkEvent *event, Client *c,  gpointer data) {
                     z = webkit_web_view_get_zoom_level(WEBKIT_WEB_VIEW(c->webView));
                     webkit_web_view_set_zoom_level(WEBKIT_WEB_VIEW(c->webView), z + 0.1);
                     return TRUE;
-		case SURFER_STYLE_KEY:
-		    toggleuserstyle_cb(c);
+            		case SURFER_STYLE_KEY:
+		                toggleuserstyle_cb(c);
                     return TRUE;
 
                 default:
@@ -1452,8 +1451,10 @@ keyboard(GtkWidget *widget,GdkEvent *event, Client *c,  gpointer data) {
 
                 case SURFER_STOP_KEY:
                     webkit_web_view_stop_loading(WEBKIT_WEB_VIEW(c->webView));
+                    gtk_widget_hide(c->box_find);
+                    gtk_widget_grab_focus(GTK_WIDGET(c->webView));
+                    c->f = FALSE;
                     return TRUE;
-
 
                 default:
                     return FALSE;
@@ -1508,12 +1509,13 @@ find_close(Client *c) {
 
 
 void
+find_next(GtkWidget * widget,Client *c){
+  webkit_find_controller_search_next(c->fc);
+}
+
+void
 find_back(GtkWidget * widget,Client *c){
-
-
-webkit_find_controller_search_previous(c->fc);
-
-
+  webkit_find_controller_search_previous(c->fc);
 }
 
 
@@ -1527,7 +1529,7 @@ static void png_finished(GObject *object, GAsyncResult *result, gpointer user_da
   GdkPixbuf *snapshot, *scaled;
   int orig_width, orig_height;
   cairo_surface_t *surface;
- 
+
 
 
   WebKitWebView *web_view = WEBKIT_WEB_VIEW(object);
@@ -1536,12 +1538,12 @@ static void png_finished(GObject *object, GAsyncResult *result, gpointer user_da
 
    tmp = g_strdup(url);
 
-   
+
    if(tmp) {
       path2 = strchr(tmp, '/');
       path = strtok(path2, "/");
       }
-    
+
     pngpath = (gchar *) g_strdup_printf("%s.png",path);
 
     png_file = g_build_filename(surfer_img_dir,pngpath, NULL);
@@ -1560,12 +1562,12 @@ static void png_finished(GObject *object, GAsyncResult *result, gpointer user_da
 
   snapshot = gdk_pixbuf_get_from_surface (surface,0, 0,orig_width, orig_height);
   scaled = gdk_pixbuf_scale_simple (snapshot,SURFER_THUMBNAIL_WIDTH,SURFER_THUMBNAIL_HEIGHT,GDK_INTERP_TILES);
-    
+
   cairo_surface_destroy(surface);
  //   cairo_surface_write_to_png(scaled, png_file);
- 
+
   gdk_pixbuf_save(scaled, png_file, "png", &error, NULL);
- 
+
   g_object_unref (snapshot);
   g_object_unref (scaled);
 
@@ -1588,12 +1590,12 @@ static void png_finished(GObject *object, GAsyncResult *result, gpointer user_da
 
 void
 bookmark_cb(WebKitWebView *webview,Client *c){
-   
+
 
 
   webkit_web_view_get_snapshot(c->webView,WEBKIT_SNAPSHOT_REGION_FULL_DOCUMENT,WEBKIT_SNAPSHOT_OPTIONS_NONE,NULL,png_finished,NULL);
 
-   
+
 }
 
 
@@ -1601,7 +1603,7 @@ void
 goback(WebKitWebView *rv,Client *c){
 
   char *title;
-  if (webkit_web_view_can_go_back(c->webView)){ 
+  if (webkit_web_view_can_go_back(c->webView)){
    webkit_web_view_go_back(WEBKIT_WEB_VIEW(c->webView));
    recordhistory= FALSE;
    }
@@ -1618,7 +1620,7 @@ void
 goforward(WebKitWebView *rv,Client *c){
 
   char *title;
- if (webkit_web_view_can_go_forward(c->webView)){ 
+ if (webkit_web_view_can_go_forward(c->webView)){
   webkit_web_view_go_forward(WEBKIT_WEB_VIEW(c->webView));
   recordhistory= FALSE;
   }
@@ -1634,29 +1636,23 @@ goforward(WebKitWebView *rv,Client *c){
 
 void
 toggleuserstyle_cb(Client *c){
-
 	gchar *contents;
-
-         if (!c->s) {
-        g_file_get_contents(USER_STYLESHEET_FILENAME,&contents,NULL,NULL);
-        webkit_user_content_manager_add_style_sheet(
-	    webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(c->webView)),
-	    webkit_user_style_sheet_new(contents,
-	    WEBKIT_USER_CONTENT_INJECT_ALL_FRAMES,
-	    WEBKIT_USER_STYLE_LEVEL_USER,
-	    NULL, NULL));
-
-	g_free(contents);
-
-          c->s = TRUE;
-                    }
-           else {
-               webkit_user_content_manager_remove_all_style_sheets(
-	    webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(c->webView)));
-                 c->s = FALSE;
-               }
-
-
+  if (!c->s) {
+      g_file_get_contents(USER_STYLESHEET_FILENAME,&contents,NULL,NULL);
+      webkit_user_content_manager_add_style_sheet(
+  	    webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(c->webView)),
+  	    webkit_user_style_sheet_new(contents,
+  	    WEBKIT_USER_CONTENT_INJECT_ALL_FRAMES,
+  	    WEBKIT_USER_STYLE_LEVEL_USER,
+  	    NULL, NULL));
+    	g_free(contents);
+      c->s = TRUE;
+  }
+  else {
+    webkit_user_content_manager_remove_all_style_sheets(
+  	  webkit_web_view_get_user_content_manager(WEBKIT_WEB_VIEW(c->webView)));
+    c->s = FALSE;
+  }
 }
 
 void
@@ -1981,9 +1977,9 @@ int main(int argc, char *argv[]) {
 
 
     menu =gtk_menu_new();
-    menuitem1 = gtk_menu_item_new_with_label("Click to cancel");
+    menuitem1 = gtk_menu_item_new_with_label("Click to cancel download");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu),menuitem1);
-    //gtk_widget_show_all(menu);
+    gtk_widget_show_all(menu);
 
     setup();
     c = client_new(NULL);

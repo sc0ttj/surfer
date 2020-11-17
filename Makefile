@@ -48,6 +48,11 @@ install:all
 	install -Dm644 icons/48x48/surfer.png $(DESTDIR)/usr/share/icons/hicolor/48x48/surfer.png
 #	install -Dm644 icons/surfer.svg $(DESTDIR)/usr/share/icons/hicolor/scalable/apps/surfer.svg
 
+clean:
+	$(RM) surfer
+	$(RM) adblock.so
+	$(RM) ephy-scripts.so
+
 uninstall:
 	$(RM) $(DESTDIR)/usr/bin/surfer
 	$(RM) $(DESTDIR)/usr/man/man1/surfer.1

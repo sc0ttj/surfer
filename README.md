@@ -6,6 +6,22 @@ Based on webkit2gtk and gtk3.
 
 No xlibs dependency &mdash; works on sway, weston etc. 
 
+## CHANGES TO THIS FORK:
+
+- main toolbar UI improvements:
+  - added a homepage button
+  - added nicer icons (requires a Nerd Font with "Font Awesome" icons)
+- find (Ctrl-/) menu improvements:
+  - added a "find next" button 
+  - added a icon/label before the input
+  - added hotkeys Alt-n (find next), Alt-p (find previous), ESC (hide menu)
+- small code clean ups (indentation, etc)
+
+End of fork info.
+
+---
+
+
 Look also at manual ( man surfer). 
 
 ## Adblock, videos, other info
